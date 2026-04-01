@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UXR Institute — AI Analysis Prompt Builder</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--surface:#f7f7f7;--surfaceHigh:#efefef;--border:#d8d8d8;
+  --accent:#ff4363;--accentBg:rgba(255,67,99,0.07);--accentBorder:rgba(255,67,99,0.28);
+  --text:#111111;--muted:#3d3d3d;--dim:#777777;--success:#10B981;
+  --sans:'Georgia','Times New Roman',serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:600px;}
+.hdr{background:#fff;border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.hdr-brand{font-size:13px;font-weight:700;letter-spacing:0.08em;color:var(--accent);text-transform:uppercase}
+.hdr-sub{font-size:11px;color:var(--dim);letter-spacing:0.04em;margin-top:1px}
+.hdr-right{font-size:11px;color:var(--dim);font-style:italic;text-align:right;max-width:220px;line-height:1.5}
+.stepbar{background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;overflow-x:auto}
+.step-item{display:flex;align-items:center}
+.step-inner{display:flex;align-items:center;gap:6px;padding:11px 6px;border-bottom:2px solid transparent;white-space:nowrap}
+.step-inner.active{border-bottom-color:var(--accent)}
+.step-num{width:20px;height:20px;border-radius:50%;background:var(--surfaceHigh);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);font-weight:700;flex-shrink:0}
+.step-num.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.step-num.done{background:var(--success);border-color:var(--success);color:#fff}
+.step-label{font-size:11px;color:var(--dim);letter-spacing:0.04em}
+.step-label.active{font-weight:700;color:var(--text)}
+.step-sep{width:12px;height:1px;background:var(--border);flex-shrink:0}
+.content{padding:28px 24px 40px;background:#fafafa;min-height:500px}
+.panel{display:none}.panel.active{display:block}
+.sec-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px}
+.sec-sub{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.65}
+.field{margin-bottom:18px}
+.field-label{display:block;font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;margin-bottom:7px}
+.field-hint{font-size:11px;color:var(--dim);margin-top:5px}
+input[type=text],input[type=number],textarea,select{width:100%;background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px 14px;color:var(--text);font-size:14px;font-family:var(--sans);outline:none;box-sizing:border-box}
+input[type=text]:focus,input[type=number]:focus,textarea:focus,select:focus{border-color:rgba(255,67,99,0.5)}
+textarea{resize:vertical}select{cursor:pointer}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.err-msg{font-size:12px;color:#dc2626;margin-top:6px;display:none}
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);cursor:pointer}
+.card.sel{border:1.5px solid var(--accent);background:var(--accentBg)}
+.card-row{display:flex;align-items:flex-start;gap:14px}
+.card-icon{font-size:26px;line-height:1;margin-top:1px}
+.card-body{flex:1}
+.card-title-row{display:flex;align-items:center;gap:10px;margin-bottom:5px;flex-wrap:wrap}
+.card-title{font-size:15px;font-weight:700;color:var(--text)}
+.card-badge{font-size:10px;font-weight:700;letter-spacing:0.1em;padding:2px 9px;border-radius:20px;text-transform:uppercase}
+.card-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:10px}
+.card-chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:10px;color:var(--muted);background:var(--surfaceHigh);border:1px solid var(--border);padding:2px 8px;border-radius:20px}
+.card-radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.card-radio.sel{border-color:var(--accent)}
+.card-radio-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);display:none}
+.card-radio.sel .card-radio-dot{display:block}
+.role-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:10px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.role-card.sel{border-color:var(--accent);background:var(--accentBg)}
+.role-card-row{display:flex;align-items:flex-start;gap:14px}
+.role-card-body{flex:1}
+.role-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px}
+.role-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.role-custom-wrap{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.role-custom-label{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;margin-bottom:8px}
+.seq-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:640px){.seq-layout{grid-template-columns:1fr}}
+.drop-zone{background:#fff;border:2px dashed var(--border);border-radius:12px;min-height:320px;padding:12px;transition:border-color 0.2s,background 0.2s}
+.drop-zone.drag-over{border-color:var(--accent);background:var(--accentBg)}
+.drop-zone-label{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;margin-bottom:10px;padding:2px 4px}
+.drop-zone-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;color:var(--dim);font-size:12px;text-align:center;gap:8px;pointer-events:none}
+.drop-zone-empty-icon{font-size:28px;opacity:0.35}
+.state-lib{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px}
+.state-lib-label{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;margin-bottom:10px;padding:2px 4px}
+.state-row{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:7px;cursor:grab;user-select:none;transition:box-shadow 0.15s,opacity 0.15s}
+.state-row:active{cursor:grabbing}
+.state-row.dragging{opacity:0.35;box-shadow:none}
+.state-row.drag-placeholder{border:2px dashed var(--accentBorder);background:var(--accentBg);min-height:46px;border-radius:8px;margin-bottom:7px}
+.state-row.first-state{border-color:rgba(255,67,99,0.2);background:rgba(255,67,99,0.02)}
+.state-row.addon-state{border:1.5px solid var(--accentBorder);background:rgba(255,67,99,0.03)}
+.lib-pill{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:6px;cursor:grab;user-select:none;transition:all 0.15s}
+.lib-pill:hover{border-color:var(--accentBorder);background:var(--accentBg)}
+.lib-pill:active{cursor:grabbing}
+.lib-pill.dragging{opacity:0.35}
+.lib-pill-plus{width:20px;height:20px;border-radius:50%;background:var(--accentBg);border:1px solid var(--accentBorder);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--accent);flex-shrink:0}
+.drag-handle{color:var(--border);font-size:14px;flex-shrink:0;line-height:1;cursor:grab}
+.state-num{width:22px;height:22px;border-radius:50%;background:var(--accentBg);border:1px solid var(--accentBorder);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--accent);font-weight:700;flex-shrink:0}
+.state-num.core-num{background:var(--surfaceHigh);border-color:var(--border);color:var(--dim)}
+.state-info{flex:1;min-width:0}
+.state-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.state-name.addon-name{color:var(--accent)}
+.state-desc{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.state-badge{font-size:10px;letter-spacing:0.06em;color:var(--dim)}
+.mini-btn{width:24px;height:24px;border-radius:4px;background:var(--surfaceHigh);border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-family:var(--sans)}
+.mini-btn:disabled{cursor:not-allowed;opacity:0.35}
+.mini-btn.del{color:#EF4444}
+.addon-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+@media(max-width:480px){.addon-grid{grid-template-columns:1fr}}
+.addon-card{background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:14px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.addon-card.sel{border-color:var(--accentBorder);background:rgba(255,67,99,0.04)}
+.addon-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.addon-tag{font-size:10px;font-weight:700;letter-spacing:0.08em;padding:2px 8px;border-radius:20px;text-transform:uppercase}
+.addon-check{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0}
+.addon-check.sel{background:var(--accent);border-color:var(--accent)}
+.addon-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px}
+.addon-when{font-size:12px;color:var(--muted);line-height:1.5}
+.section-head{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;margin-bottom:10px;margin-top:20px}
+.btn{padding:10px 22px;border-radius:6px;font-size:13px;cursor:pointer;border:none;font-family:var(--sans);font-weight:600;letter-spacing:0.04em}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-secondary{background:var(--surfaceHigh);color:var(--muted);border:1px solid var(--border)}
+.btn-row{display:flex;justify-content:space-between;margin-top:20px}
+.meta-chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.meta-chip{background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 14px;max-width:280px}
+.meta-chip-label{font-size:9px;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;margin-bottom:3px}
+.meta-chip-val{font-size:12px;color:var(--text);font-weight:600}
+.prompt-wrap{position:relative;margin-bottom:16px}
+.prompt-out{width:100%;font-family:'Courier New',Courier,monospace;font-size:11.5px;line-height:1.7;color:#000000;height:280px;resize:none;background:#f0f0f0;border:1px solid var(--border);border-radius:6px;padding:12px 14px;outline:none;box-sizing:border-box}
+.copy-btn{position:absolute;top:10px;right:10px;padding:7px 16px;font-size:11px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--muted);font-family:var(--sans);font-weight:600}
+.copy-btn.copied{background:var(--success);border-color:var(--success);color:#fff}
+.howto{background:rgba(255,67,99,0.05);border:1px solid rgba(255,67,99,0.2);border-radius:8px;padding:14px;margin-bottom:20px}
+.howto-title{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px}
+.howto-body{font-size:12px;color:var(--muted);line-height:1.65}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div>
+      <div class="hdr-brand">UXR Institute</div>
+      <div class="hdr-sub">AI Analysis Prompt Builder</div>
+    </div>
+  </div>
+  <div class="hdr-right">Build a custom analytical workflow for qualitative research</div>
+</div>
+
+<div class="stepbar" id="stepbar"></div>
+
+<div class="content">
+
+  <div class="panel active" id="panel-1">
+    <div class="sec-title">Project Setup</div>
+    <div class="sec-sub">Define your research context. Your prompt will be tailored to your specific goal and data.</div>
+    <div class="field">
+      <label class="field-label">Research Goal *</label>
+      <textarea id="inp-goal" rows="3" placeholder="e.g. Identify why users abandon checkout before completing a purchase"></textarea>
+      <div class="err-msg" id="err-goal">Please enter your research goal before continuing.</div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label class="field-label">Client / Organization</label>
+        <input type="text" id="inp-client" placeholder="e.g. Acme Corp"/>
+      </div>
+      <div class="field">
+        <label class="field-label">Data Type</label>
+        <select id="inp-datatype">
+          <option value="">Select...</option>
+          <option>Interview transcripts</option>
+          <option>Focus group notes</option>
+          <option>Survey responses</option>
+          <option>Field notes</option>
+          <option>Mixed methods</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Project Context</label>
+      <textarea id="inp-context" rows="2" placeholder="e.g. This research is part of a Q3 redesign initiative."></textarea>
+    </div>
+    <div class="field">
+      <label class="field-label">Target Number of Codes</label>
+      <input type="number" id="inp-codes" value="15" min="5" max="50" style="width:100px"/>
+      <div class="field-hint">Recommended: 10–20 for most projects</div>
+    </div>
+    <div class="btn-row" style="justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-primary" onclick="goStep(2)">Continue →</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-2">
+    <div class="sec-title">Choose a Workflow Model</div>
+    <div class="sec-sub">Select a starting point. You can customize the sequence in the next step.</div>
+    <div id="model-cards"></div>
+    <div class="err-msg" id="err-model" style="margin-bottom:12px">Please select a workflow model.</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+      <button class="btn btn-primary" onclick="goStep(3)">Continue →</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-3">
+    <div class="sec-title">Assign a Role</div>
+    <div class="sec-sub">The role shapes how the AI frames its analysis — influencing language, emphasis, and the type of insights it surfaces.</div>
+    <div id="role-cards"></div>
+    <div class="role-custom-wrap">
+      <div class="role-custom-label">Or define a custom role</div>
+      <input type="text" id="inp-custom-role" placeholder="e.g. Expert consumer psychologist specializing in habit formation" oninput="onCustomRoleInput()"/>
+      <div class="field-hint" style="margin-top:6px">If filled, this overrides the selection above.</div>
+    </div>
+    <div class="err-msg" id="err-role" style="margin-top:12px">Please select a role or enter a custom one.</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+      <button class="btn btn-primary" onclick="goStep(4)">Continue →</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-4">
+    <div class="sec-title">Core Analysis Sequence</div>
+    <div class="sec-sub" id="step4-sub">Drag states to reorder your sequence. Remove any that don't apply.</div>
+    <div id="seq-container"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+      <button class="btn btn-primary" onclick="goStep(5)">Continue →</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-5">
+    <div class="sec-title">Optional Add-ons</div>
+    <div class="sec-sub">Enrich your analysis with specialized states. Select any that fit, then reorder them in the sequence below.</div>
+    <div class="addon-grid" id="addon-grid"></div>
+    <div id="full-seq-section" style="display:none">
+      <div class="section-head">Full Sequence — drag to reposition add-ons</div>
+      <div id="full-seq-list"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(4)">← Back</button>
+      <button class="btn btn-primary" onclick="goStep(6)">Generate Prompt →</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-6">
+    <div class="sec-title">Your Prompt is Ready</div>
+    <div class="meta-chips" id="meta-chips"></div>
+    <div class="prompt-wrap">
+      <textarea class="prompt-out" id="prompt-out" readonly></textarea>
+      <button class="copy-btn" id="copy-btn" onclick="copyPrompt()">Copy</button>
+    </div>
+    <div class="howto">
+      <div class="howto-title">How to use this prompt</div>
+      <div class="howto-body">Paste this into the system prompt of your LLM (Claude, ChatGPT, Gemini). Upload your transcripts and begin with State 1. The AI will pause at each checkpoint and wait for your review before proceeding.</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(5)">← Edit</button>
+      <button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var ROLES=[{id:'ux',title:'Senior UX Researcher',desc:'Output leans strongly UX — emphasising pain points, friction, and usability concepts. Best for product and design teams who need actionable, experience-centred findings.'},{id:'qual',title:'Expert Qualitative Researcher',desc:'Output leans academic — focused on surfacing latent themes such as deep psychological motivations, cultural patterns, and underlying belief systems. Best for nuanced, theory-informed work.'},{id:'thematic',title:'Expert Thematic Analyst',desc:'Output prioritises methodological rigour — structured codebook management, systematic coding, and defensible analytical decisions. Best when process integrity is paramount.'}];
+var ASSOC=[{id:'ind_disc',name:'Inductive Discovery',shortDesc:'AI surfaces patterns from your transcripts',goal:'Generate an Initial Codebook of [NUMBER_OF_CODES] codes representing the most salient patterns related to the study goal.',dataInput:'Initial upload of transcripts and a target number of codes.',action:'Identify the most salient patterns in the transcripts that address the [GOAL] and produce a table following the [OUTPUT_FORMAT].',exit:'AI presents the Codebook Draft for human review. DO NOT AUTO-PROCEED.'},{id:'interp_align',name:'Interpretive Alignment',shortDesc:'Finalize codebook by reflecting your rationale back',goal:"Finalize the Codebook by reflecting back the Human Lead's rationale.",dataInput:"Human Lead's edits, deletions, or refined definitions of the Codebook Draft.",action:"Reflect back the Human's finalized rationale for each code to ensure alignment for the full analysis.",exit:'The Human confirms: "Our interpretations are aligned."'},{id:'pilot',name:'Piloting',shortDesc:'Test codebook stability on unseen transcripts',goal:'Test the aligned Codebook on new transcripts to verify stability.',dataInput:'Upload of new, unseen transcripts (approx. 20% of dataset).',action:'Apply the Draft Codebook to this batch using the [OUTPUT_FORMAT] to see if the codes hold up.',exit:'AI generates a matrix of applied codes in [OUTPUT_FORMAT].'},{id:'full_app',name:'Full Dataset Application',shortDesc:'Apply finalized codebook to all transcripts',goal:'Comprehensive Data Reduction using the Finalized Codebook.',dataInput:'Full Transcript Dataset (100%).',action:'Apply the Finalized Codebook across ALL transcripts to build the Master Matrix.',exit:'Complete Master Matrix using [OUTPUT_FORMAT]. DO NOT AUTO-PROCEED.'},{id:'theming',name:'Interpretation (Theming)',shortDesc:'Cluster codes into high-level explanatory themes',goal:'Cluster codes into 3-5 high-level patterns that explain the "Why" behind the "What."',dataInput:'Coded data from the Master Matrix.',action:'Group coded data into overarching interpretive themes that address the [GOAL].',exit:'AI presents hypothesized themes with supporting evidence.'},{id:'neg_case',name:'Verifying Themes',shortDesc:'Stress-test themes via negative case analysis',goal:'Stress-test themes via Negative Case Analysis to prevent confirmation bias.',dataInput:'Hypothesized themes and the Master Matrix.',action:'Identify data that contradicts or complicates the hypothesized themes.',exit:'AI identifies Negative Cases using [OUTPUT_FORMAT].'},{id:'insights',name:'Final Insights',shortDesc:'Translate themes into stakeholder-ready insights',goal:'Determine the business significance of the themes for the study goal.',dataInput:'Verified themes and Negative Case Analysis results.',action:'Select the best-fitting explanation for the business significance of each theme.',exit:'Final strategy report for stakeholders. PROCESS COMPLETE.'}];
+var APPRENT=[{id:'seeds_align',name:'Interpretive Alignment',shortDesc:'Calibrate AI using your own coded examples',goal:"Reflect back the Human Lead's coding rationale to ensure inter-rater reliability.",dataInput:'3-5 Human-Coded "Seeds" (Quote + Code + Rationale).',action:'Analyze the seeds and reflect the rationale back to prove replication of thinking.',exit:'Human confirms: "Our interpretations are aligned."'},{id:'draft_cb',name:'Draft Codebook Generation',shortDesc:'AI builds codebook from a sample, guided by your logic',goal:'Generate an initial codebook derived from aligned logic and a sample of the data.',dataInput:'Initial Sample (approx. 20% of transcripts).',action:'Scan the sample to identify recurring patterns and produce a Draft Codebook using the [OUTPUT_FORMAT].',exit:'AI presents the Draft Codebook. DO NOT AUTO-PROCEED.'},{id:'pilot_ap',name:'Piloting',shortDesc:'Test codebook stability on a fresh batch',goal:'Initial application of codebook to a small batch to test stability.',dataInput:'Second Sample (approx. 20% of new, unseen transcripts).',action:'Apply the Draft Codebook to this batch using the [OUTPUT_FORMAT] to see if the codes hold up.',exit:'AI generates a matrix of applied codes in [OUTPUT_FORMAT].'},{id:'refine_cb',name:'Refining & Finalizing Codebook',shortDesc:'Human-led formalization of code definitions',goal:'Human-led evaluation and formalization of code definitions.',dataInput:'Human Feedback on Piloting results.',action:'Update definitions and finalize the Codebook based on the Pilot audit.',exit:'AI provides a Finalized Codebook.'},{id:'full_app_ap',name:'Full Dataset Application',shortDesc:'Apply finalized codebook to all transcripts',goal:'Comprehensive Data Reduction using the Finalized Codebook.',dataInput:'Full Transcript Dataset (100%).',action:'Apply the Finalized Codebook across ALL transcripts to build the Master Matrix.',exit:'Complete Master Matrix using [OUTPUT_FORMAT].'},{id:'theming_ap',name:'Interpretation (Theming)',shortDesc:'Cluster codes into high-level explanatory themes',goal:'Cluster codes into 3-5 high-level patterns that explain the "Why" behind the "What."',dataInput:'Coded data from the Master Matrix.',action:'Group coded data into overarching interpretive themes that address the [GOAL].',exit:'AI presents hypothesized themes with supporting evidence.'},{id:'neg_case_ap',name:'Verifying Themes',shortDesc:'Stress-test themes via negative case analysis',goal:'Stress-test themes via Negative Case Analysis to prevent confirmation bias.',dataInput:'Hypothesized themes and the Master Matrix.',action:'Identify data that contradicts or complicates the hypothesized themes.',exit:'AI identifies Negative Cases using [OUTPUT_FORMAT].'},{id:'insights_ap',name:'Final Insights',shortDesc:'Translate themes into stakeholder-ready insights',goal:'Determine the business significance of the themes for the study goal.',dataInput:'Verified themes and Negative Case Analysis results.',action:'Select the best-fitting explanation for the business significance of each theme.',exit:'Final strategy report for stakeholders. PROCESS COMPLETE.'}];
+var ALL_STATES=[{id:'ind_disc',name:'Inductive Discovery',shortDesc:'AI surfaces patterns from your transcripts',goal:'Generate an Initial Codebook of [NUMBER_OF_CODES] codes.',dataInput:'Initial upload of transcripts.',action:'Identify the most salient patterns that address the [GOAL].',exit:'AI presents the Codebook Draft. DO NOT AUTO-PROCEED.'},{id:'interp_align',name:'Interpretive Alignment',shortDesc:'Finalize codebook by reflecting your rationale back',goal:"Finalize the Codebook by reflecting back the Human Lead's rationale.",dataInput:"Human Lead's edits, deletions, or refined definitions.",action:"Reflect back the Human's finalized rationale for each code.",exit:'The Human confirms: "Our interpretations are aligned."'},{id:'seeds_align',name:'Interpretive Alignment (Seeds)',shortDesc:'Calibrate AI using your own coded examples',goal:"Reflect back the Human Lead's coding rationale.",dataInput:'3-5 Human-Coded "Seeds" (Quote + Code + Rationale).',action:'Analyze the seeds and reflect the rationale back.',exit:'Human confirms: "Our interpretations are aligned."'},{id:'draft_cb',name:'Draft Codebook Generation',shortDesc:'AI builds codebook from a sample, guided by your logic',goal:'Generate an initial codebook derived from aligned logic.',dataInput:'Initial Sample (approx. 20% of transcripts).',action:'Scan the sample to identify recurring patterns and produce a Draft Codebook.',exit:'AI presents the Draft Codebook. DO NOT AUTO-PROCEED.'},{id:'pilot',name:'Piloting',shortDesc:'Test codebook stability on unseen transcripts',goal:'Test the aligned Codebook on new transcripts.',dataInput:'Upload of new, unseen transcripts (approx. 20%).',action:'Apply the Draft Codebook to this batch using the [OUTPUT_FORMAT].',exit:'AI generates a matrix of applied codes in [OUTPUT_FORMAT].'},{id:'refine_cb',name:'Refining & Finalizing Codebook',shortDesc:'Human-led formalization of code definitions',goal:'Human-led evaluation and formalization of code definitions.',dataInput:'Human Feedback on Piloting results.',action:'Update definitions and finalize the Codebook based on the Pilot audit.',exit:'AI provides a Finalized Codebook.'},{id:'full_app',name:'Full Dataset Application',shortDesc:'Apply finalized codebook to all transcripts',goal:'Comprehensive Data Reduction using the Finalized Codebook.',dataInput:'Full Transcript Dataset (100%).',action:'Apply the Finalized Codebook across ALL transcripts to build the Master Matrix.',exit:'Complete Master Matrix using [OUTPUT_FORMAT]. DO NOT AUTO-PROCEED.'},{id:'theming',name:'Interpretation (Theming)',shortDesc:'Cluster codes into high-level explanatory themes',goal:'Cluster codes into 3-5 high-level patterns.',dataInput:'Coded data from the Master Matrix.',action:'Group coded data into overarching interpretive themes that address the [GOAL].',exit:'AI presents hypothesized themes with supporting evidence.'},{id:'neg_case',name:'Verifying Themes',shortDesc:'Stress-test themes via negative case analysis',goal:'Stress-test themes via Negative Case Analysis.',dataInput:'Hypothesized themes and the Master Matrix.',action:'Identify data that contradicts or complicates the hypothesized themes.',exit:'AI identifies Negative Cases using [OUTPUT_FORMAT].'},{id:'insights',name:'Final Insights',shortDesc:'Translate themes into stakeholder-ready insights',goal:'Determine the business significance of the themes.',dataInput:'Verified themes and Negative Case Analysis results.',action:'Select the best-fitting explanation for the business significance of each theme.',exit:'Final strategy report for stakeholders. PROCESS COMPLETE.'}];
+var ADDONS=[{id:'reflection',name:'Reflection & Memo-Writing',tag:'RIGOR',tagColor:'#7C3AED',tagBg:'rgba(124,58,237,0.1)',whenToUse:'When you need to document your analytical process and identify potential biases for transparency and audit trails.',goal:"Document the researcher's analytical process, internal logic, and potential biases.",dataInput:"Researcher's internal observations, field notes, or prompts for reflection.",action:'Synthesize researcher observations into a formal Research Memo. Ensure any data cited includes Participant IDs and Timestamps.',exit:'AI presents a finalized Reflective Memo for the project archive. DO NOT AUTO-PROCEED.'},{id:'triangulation',name:'Triangulation',tag:'VALIDATION',tagColor:'#059669',tagBg:'rgba(5,150,105,0.1)',whenToUse:'When you have quantitative data, surveys, or behavioral analytics to cross-reference against your qualitative findings.',goal:'Validate qualitative interview findings against secondary data sources.',dataInput:'Quantitative summaries, secondary datasets, or behavioral analytics reports.',action:'Map qualitative themes from the Master Matrix against secondary data points. All qualitative evidence must retain Participant IDs and Timestamps.',exit:'AI presents a Triangulation Audit report. DO NOT AUTO-PROCEED.'},{id:'comp_slicing',name:'Comparative Slicing',tag:'SEGMENTS',tagColor:'#D97706',tagBg:'rgba(217,119,6,0.1)',whenToUse:'When you need to understand how themes differ across user segments, personas, or demographic groups.',goal:'Identify how themes and pain points vary across different user segments or personas.',dataInput:'Participant metadata (e.g., age, frequency of use, job title) or defined segments.',action:'Re-analyze the Master Matrix to identify thematic variances between the specified segments, using Participant IDs and Timestamps.',exit:'AI presents a Segmented Comparison Table. DO NOT AUTO-PROCEED.'},{id:'theory_map',name:'Theory Mapping',tag:'FRAMEWORKS',tagColor:'#0284C7',tagBg:'rgba(2,132,199,0.1)',whenToUse:"When you want to align inductive findings with established frameworks like JTBD or Nielsen's Heuristics.",goal:'Align inductive findings with established theoretical frameworks or industry standards.',dataInput:'Structure or definition of the chosen theoretical framework.',action:'Map the verified research themes to the specific categories of the provided framework, maintaining strict data traceability (Participant ID + Timestamp).',exit:'AI presents a Theoretical Mapping Matrix. DO NOT AUTO-PROCEED.'},{id:'persona',name:'Persona Synthesis',tag:'DELIVERABLE',tagColor:'#DB2777',tagBg:'rgba(219,39,119,0.1)',whenToUse:'When stakeholders need humanized, evidence-based user archetypes as a deliverable.',goal:'Translate research data into humanized, evidence-based user archetypes.',dataInput:'Finalized themes and the Master Matrix.',action:'Group participant data into 2-3 distinct archetypes, providing verbatim quote evidence (ID + Timestamp) for each trait.',exit:'AI presents User Archetype Profiles grounded in the raw data. DO NOT AUTO-PROCEED.'},{id:'social_gate',name:'Socialization Gate',tag:'STAKEHOLDERS',tagColor:'#DC2626',tagBg:'rgba(220,38,38,0.1)',whenToUse:'When your findings need to hold up against stakeholder pushback, business KPIs, or product constraints.',goal:'Stress-test research findings against business objectives, constraints, or stakeholder concerns.',dataInput:'Stakeholder questions, business KPIs, or known product constraints.',action:'Cross-reference stakeholder priorities with the Master Matrix, retaining Participant IDs and Timestamps.',exit:'AI presents a Socialization Audit prioritizing insights by business relevance. DO NOT AUTO-PROCEED.'},{id:'socratic',name:'Socratic Elicitation',tag:'DEPTH',tagColor:'#6D28D9',tagBg:'rgba(109,40,217,0.1)',whenToUse:"When you want AI to challenge your assumptions and identify logical gaps before you commit to a finding.",goal:"Sharpen the researcher's analytical rigor by challenging assumptions and identifying logical gaps.",dataInput:"The researcher's current hunch, draft theory, or a specific interpretive claim.",action:"The AI adopts a Skeptical Peer persona. It identifies 3-5 segments that appear to contradict the researcher's claim and asks for reconciliation using Participant IDs and Timestamps.",exit:'The researcher provides a Logic Defense or updated theory. AI confirms the logic is now more robust. DO NOT AUTO-PROCEED.'}];
+var MODELS=[{id:'associate',label:'The Associate',sub:'AI-Led Inductive',icon:'◈',desc:'The AI discovers patterns from scratch. Best when you want fresh eyes on the data without pre-existing codes.',color:'#ff4363',rgb:'255,67,99',states:ASSOC},{id:'apprentice',label:'The Apprentice',sub:'Human Seeds First',icon:'◉',desc:'You provide coded examples first. The AI calibrates to your analytical logic before generating the codebook.',color:'#7C3AED',rgb:'124,58,237',states:APPRENT},{id:'custom',label:'Custom Build',sub:'Design Your Own',icon:'◎',desc:'Select and arrange states from the full library. For researchers who know exactly what their project needs.',color:'#0EA5E9',rgb:'14,165,233',states:[]}];
+
+var currentStep=1,selectedModel=null,selectedRole=null,sequence=[],dragSrc=null,dragSrcList=null;
+
+function showErr(id){document.getElementById(id).style.display='block';}
+function hideErr(id){document.getElementById(id).style.display='none';}
+
+function goStep(n){
+  if(n===2){var g=document.getElementById('inp-goal').value.trim();if(g.length<6){showErr('err-goal');document.getElementById('inp-goal').focus();return;}hideErr('err-goal');}
+  if(n===3){if(!selectedModel){showErr('err-model');return;}hideErr('err-model');}
+  if(n===4){var r=getActiveRole();if(!r){showErr('err-role');return;}hideErr('err-role');}
+  if(n===4)renderStep4();
+  if(n===5)renderStep5();
+  if(n===6)renderStep6();
+  document.getElementById('panel-'+currentStep).classList.remove('active');
+  currentStep=n;
+  document.getElementById('panel-'+n).classList.add('active');
+  renderStepBar();
+  window.scrollTo(0,0);
+}
+
+function resetAll(){
+  selectedModel=null;selectedRole=null;sequence=[];currentStep=1;
+  ['inp-goal','inp-client','inp-context','inp-custom-role'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('inp-datatype').value='';document.getElementById('inp-codes').value='15';
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('panel-1').classList.add('active');
+  renderStepBar();renderModelCards();renderRoleCards();
+}
+
+function renderStepBar(){
+  var steps=['Project','Model','Role','Sequence','Add-ons','Prompt'];
+  var bar=document.getElementById('stepbar');bar.innerHTML='';
+  steps.forEach(function(label,i){
+    var n=i+1,active=n===currentStep,done=n<currentStep;
+    var item=document.createElement('div');item.className='step-item';
+    var inner=document.createElement('div');inner.className='step-inner'+(active?' active':'');
+    var num=document.createElement('div');num.className='step-num'+(done?' done':active?' active':'');num.textContent=done?'✓':n;
+    var lbl=document.createElement('span');lbl.className='step-label'+(active?' active':'');lbl.textContent=label;
+    inner.appendChild(num);inner.appendChild(lbl);item.appendChild(inner);
+    if(i<5){var sep=document.createElement('div');sep.className='step-sep';item.appendChild(sep);}
+    bar.appendChild(item);
+  });
+}
+
+function renderModelCards(){
+  var c=document.getElementById('model-cards');c.innerHTML='';
+  MODELS.forEach(function(m){
+    var card=document.createElement('div');card.className='card'+(selectedModel===m.id?' sel':'');card.onclick=function(){selectModel(m.id);};
+    var row=document.createElement('div');row.className='card-row';
+    var icon=document.createElement('div');icon.className='card-icon';icon.style.color=m.color;icon.textContent=m.icon;
+    var body=document.createElement('div');body.className='card-body';
+    var tr=document.createElement('div');tr.className='card-title-row';
+    var t=document.createElement('span');t.className='card-title';t.textContent=m.label;
+    var b=document.createElement('span');b.className='card-badge';b.style.color=m.color;b.style.background='rgba('+m.rgb+',0.1)';b.textContent=m.sub;
+    tr.appendChild(t);tr.appendChild(b);
+    var d=document.createElement('div');d.className='card-desc';d.textContent=m.desc;
+    body.appendChild(tr);body.appendChild(d);
+    if(m.id!=='custom'){var chips=document.createElement('div');chips.className='card-chips';m.states.forEach(function(st){var chip=document.createElement('span');chip.className='chip';chip.textContent=st.name;chips.appendChild(chip);});body.appendChild(chips);}
+    var radio=document.createElement('div');radio.className='card-radio'+(selectedModel===m.id?' sel':'');
+    var dot=document.createElement('div');dot.className='card-radio-dot';radio.appendChild(dot);
+    row.appendChild(icon);row.appendChild(body);row.appendChild(radio);card.appendChild(row);c.appendChild(card);
+  });
+}
+
+function selectModel(id){
+  selectedModel=id;hideErr('err-model');
+  var m=MODELS.find(function(x){return x.id===id;});
+  sequence=id!=='custom'?m.states.map(function(s){return Object.assign({},s,{isAddon:false});}):[]; 
+  renderModelCards();
+}
+
+function renderRoleCards(){
+  var c=document.getElementById('role-cards');c.innerHTML='';
+  ROLES.forEach(function(r){
+    var card=document.createElement('div');card.className='role-card'+(selectedRole===r.id?' sel':'');card.onclick=function(){selectRole(r.id);};
+    var row=document.createElement('div');row.className='role-card-row';
+    var body=document.createElement('div');body.className='role-card-body';
+    var t=document.createElement('div');t.className='role-title';t.textContent=r.title;
+    var d=document.createElement('div');d.className='role-desc';d.textContent=r.desc;
+    body.appendChild(t);body.appendChild(d);
+    var radio=document.createElement('div');radio.className='card-radio'+(selectedRole===r.id?' sel':'');radio.style.marginTop='3px';
+    var dot=document.createElement('div');dot.className='card-radio-dot';radio.appendChild(dot);
+    row.appendChild(body);row.appendChild(radio);card.appendChild(row);c.appendChild(card);
+  });
+}
+
+function selectRole(id){selectedRole=id;document.getElementById('inp-custom-role').value='';hideErr('err-role');renderRoleCards();}
+function onCustomRoleInput(){
+  var val=document.getElementById('inp-custom-role').value.trim();
+  if(val.length>3){selectedRole=null;hideErr('err-role');renderRoleCards();}
+}
+function getActiveRole(){
+  var custom=document.getElementById('inp-custom-role').value.trim();
+  if(custom.length>3)return custom;
+  if(selectedRole){var r=ROLES.find(function(x){return x.id===selectedRole;});return r?r.title:null;}
+  return null;
+}
+
+// ── STEP 4 ────────────────────────────────────────────────────────────────
+function renderStep4(){
+  var isCustom=selectedModel==='custom';
+  document.getElementById('step4-sub').textContent=isCustom?'Drag states from the library into your sequence. Or click the + to add them.':'Drag states to reorder your sequence. Remove any that don\'t apply.';
+  var container=document.getElementById('seq-container');container.innerHTML='';
+  if(isCustom){
+    var layout=document.createElement('div');layout.className='seq-layout';
+    var dropZone=document.createElement('div');dropZone.className='drop-zone';dropZone.id='drop-zone';
+    var dzLabel=document.createElement('div');dzLabel.className='drop-zone-label';dzLabel.textContent='Your Sequence';
+    dropZone.appendChild(dzLabel);
+    var dzList=document.createElement('div');dzList.id='dz-list';dropZone.appendChild(dzList);
+    var lib=document.createElement('div');lib.className='state-lib';
+    var libLabel=document.createElement('div');libLabel.className='state-lib-label';libLabel.textContent='State Library — drag or click + to add';
+    lib.appendChild(libLabel);
+    var libList=document.createElement('div');libList.id='lib-list';lib.appendChild(libList);
+    layout.appendChild(dropZone);layout.appendChild(lib);container.appendChild(layout);
+    renderDropZone();renderLibrary();setupDropZoneDrop(dropZone);
+  } else {
+    var dropZone=document.createElement('div');dropZone.className='drop-zone';dropZone.id='drop-zone';
+    var dzLabel=document.createElement('div');dzLabel.className='drop-zone-label';dzLabel.textContent='Your Sequence — drag to reorder';
+    dropZone.appendChild(dzLabel);
+    var dzList=document.createElement('div');dzList.id='dz-list';dropZone.appendChild(dzList);
+    container.appendChild(dropZone);
+    setupDropZoneDrop(dropZone);
+    renderDropZone();
+  }
+}
+
+function renderDropZone(){
+  var dzList=document.getElementById('dz-list');if(!dzList)return;
+  dzList.innerHTML='';
+  if(sequence.length===0){
+    var empty=document.createElement('div');empty.className='drop-zone-empty';
+    var icon=document.createElement('div');icon.className='drop-zone-empty-icon';icon.textContent='⬡';
+    var txt=document.createElement('div');txt.textContent='Drag states here to build your sequence';
+    empty.appendChild(icon);empty.appendChild(txt);dzList.appendChild(empty);return;
+  }
+  sequence.forEach(function(st,i){dzList.appendChild(makeSeqRow(st,i));});
+}
+
+function renderLibrary(){
+  var libList=document.getElementById('lib-list');if(!libList)return;libList.innerHTML='';
+  var used=sequence.map(function(s){return s.id;});
+  var available=ALL_STATES.filter(function(s){return used.indexOf(s.id)===-1;});
+  if(available.length===0){
+    var msg=document.createElement('div');msg.style.cssText='font-size:12px;color:var(--dim);padding:12px 4px;text-align:center';msg.textContent='All states are in your sequence';libList.appendChild(msg);return;
+  }
+  available.forEach(function(st){libList.appendChild(makeLibPill(st));});
+}
+
+function makeSeqRow(st,i){
+  var row=document.createElement('div');
+  row.className='state-row'+(i===0&&!st.isAddon?' first-state':'')+(st.isAddon?' addon-state':'');
+  row.draggable=true;row.dataset.id=st.id;row.dataset.src='seq';
+  var handle=document.createElement('div');handle.className='drag-handle';handle.textContent='⠿';
+  var num=document.createElement('div');num.className='state-num'+(st.isAddon?'':' core-num');num.textContent=i+1;
+  var info=document.createElement('div');info.className='state-info';
+  var n=document.createElement('div');n.className='state-name'+(st.isAddon?' addon-name':'');n.textContent=st.name;
+  var d=document.createElement('div');d.className='state-desc';d.textContent=st.shortDesc;
+  info.appendChild(n);info.appendChild(d);
+  var del=document.createElement('button');del.className='mini-btn del';del.textContent='×';del.title='Remove';
+  del.onclick=(function(idx){return function(e){e.stopPropagation();removeSeqState(idx);};})(i);
+  row.appendChild(handle);row.appendChild(num);row.appendChild(info);row.appendChild(del);
+  row.addEventListener('dragstart',function(e){dragSrc=this;dragSrcList='seq';this.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',this.dataset.id);});
+  row.addEventListener('dragend',function(){this.classList.remove('dragging');clearPlaceholders();});
+  row.addEventListener('dragover',function(e){
+    if(dragSrcList==='seq'){e.preventDefault();e.dataTransfer.dropEffect='move';
+      var dz=document.getElementById('dz-list');clearPlaceholders();
+      var after=getDragAfterElement(dz,e.clientY);
+      var ph=makePlaceholder();if(!after){dz.appendChild(ph);}else{dz.insertBefore(ph,after);}
+    }
+  });
+  row.addEventListener('drop',function(e){
+    e.preventDefault();
+    if(dragSrcList==='seq'&&dragSrc&&dragSrc!==this){
+      var srcId=e.dataTransfer.getData('text/plain'),tgtId=this.dataset.id;
+      var si=sequence.findIndex(function(s){return s.id===srcId;}),ti=sequence.findIndex(function(s){return s.id===tgtId;});
+      if(si!==-1&&ti!==-1){var tmp=sequence[si];sequence.splice(si,1);var ni=sequence.findIndex(function(s){return s.id===tgtId;});sequence.splice(ni,0,tmp);}
+      renderDropZone();
+    }
+  });
+  return row;
+}
+
+function makeLibPill(st){
+  var pill=document.createElement('div');pill.className='lib-pill';pill.draggable=true;pill.dataset.id=st.id;pill.dataset.src='lib';
+  var plus=document.createElement('div');plus.className='lib-pill-plus';plus.textContent='+';
+  var info=document.createElement('div');info.style.flex='1';info.style.minWidth='0';
+  var n=document.createElement('div');n.style.cssText='font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';n.textContent=st.name;
+  var d=document.createElement('div');d.style.cssText='font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';d.textContent=st.shortDesc;
+  info.appendChild(n);info.appendChild(d);pill.appendChild(plus);pill.appendChild(info);
+  pill.addEventListener('click',function(){sequence.push(Object.assign({},st,{isAddon:false}));renderDropZone();renderLibrary();});
+  pill.addEventListener('dragstart',function(e){dragSrc=this;dragSrcList='lib';this.classList.add('dragging');e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain',this.dataset.id);});
+  pill.addEventListener('dragend',function(){this.classList.remove('dragging');clearPlaceholders();var dz=document.getElementById('drop-zone');if(dz)dz.classList.remove('drag-over');});
+  return pill;
+}
+
+function setupDropZoneDrop(dz){
+  dz.addEventListener('dragover',function(e){
+    e.preventDefault();dz.classList.add('drag-over');
+    if(dragSrcList==='lib'){
+      e.dataTransfer.dropEffect='copy';
+      var dzList=document.getElementById('dz-list');
+      var after=getDragAfterElement(dzList,e.clientY);clearPlaceholders();
+      var ph=makePlaceholder();if(!after){dzList.appendChild(ph);}else{dzList.insertBefore(ph,after);}
+    } else if(dragSrcList==='seq'){e.dataTransfer.dropEffect='move';}
+  });
+  dz.addEventListener('dragleave',function(e){if(!dz.contains(e.relatedTarget)){dz.classList.remove('drag-over');clearPlaceholders();}});
+  dz.addEventListener('drop',function(e){
+    e.preventDefault();dz.classList.remove('drag-over');clearPlaceholders();
+    var id=e.dataTransfer.getData('text/plain');
+    if(dragSrcList==='lib'){
+      var st=ALL_STATES.find(function(s){return s.id===id;});
+      if(st&&!sequence.find(function(s){return s.id===id;})){
+        var dzList=document.getElementById('dz-list');
+        var after=getDragAfterElement(dzList,e.clientY);
+        var insertIdx=sequence.length;
+        if(after&&after.dataset.id){var ai=sequence.findIndex(function(s){return s.id===after.dataset.id;});if(ai!==-1)insertIdx=ai;}
+        sequence.splice(insertIdx,0,Object.assign({},st,{isAddon:false}));
+        renderDropZone();renderLibrary();
+      }
+    } else if(dragSrcList==='seq'){
+      var si=sequence.findIndex(function(s){return s.id===id;});
+      if(si!==-1){
+        var dzList=document.getElementById('dz-list');
+        var after=getDragAfterElement(dzList,e.clientY);
+        var tmp=sequence.splice(si,1)[0];
+        var insertIdx=sequence.length;
+        if(after&&after.dataset.id){var ai=sequence.findIndex(function(s){return s.id===after.dataset.id;});if(ai!==-1)insertIdx=ai;}
+        sequence.splice(insertIdx,0,tmp);renderDropZone();
+      }
+    }
+  });
+}
+
+function makePlaceholder(){var ph=document.createElement('div');ph.className='drag-placeholder';ph.dataset.placeholder='1';return ph;}
+function clearPlaceholders(){document.querySelectorAll('[data-placeholder]').forEach(function(el){el.remove();});}
+function getDragAfterElement(container,y){
+  var els=[].slice.call(container.querySelectorAll('.state-row:not(.dragging):not(.drag-placeholder),.lib-pill:not(.dragging)'));
+  var closest=null,closestOffset=Number.NEGATIVE_INFINITY;
+  els.forEach(function(el){var box=el.getBoundingClientRect();var offset=y-(box.top+box.height/2);if(offset<0&&offset>closestOffset){closestOffset=offset;closest=el;}});
+  return closest;
+}
+function removeSeqState(i){sequence.splice(i,1);renderDropZone();if(selectedModel==='custom')renderLibrary();}
+
+// ── STEP 5 ────────────────────────────────────────────────────────────────
+function renderStep5(){
+  renderDropZone();
+  var grid=document.getElementById('addon-grid');grid.innerHTML='';
+  ADDONS.forEach(function(addon){
+    var sel=sequence.some(function(s){return s.id===addon.id;});
+    var card=document.createElement('div');card.className='addon-card'+(sel?' sel':'');card.onclick=(function(a){return function(){toggleAddon(a);};})(addon);
+    var top=document.createElement('div');top.className='addon-card-top';
+    var tag=document.createElement('span');tag.className='addon-tag';tag.style.color=addon.tagColor;tag.style.background=addon.tagBg;tag.textContent=addon.tag;
+    var check=document.createElement('div');check.className='addon-check'+(sel?' sel':'');check.textContent=sel?'✓':'';
+    top.appendChild(tag);top.appendChild(check);
+    var n=document.createElement('div');n.className='addon-name';n.textContent=addon.name;
+    var w=document.createElement('div');w.className='addon-when';w.textContent=addon.whenToUse;
+    card.appendChild(top);card.appendChild(n);card.appendChild(w);grid.appendChild(card);
+  });
+  renderFullSeq();
+}
+
+function toggleAddon(addon){
+  var idx=sequence.findIndex(function(s){return s.id===addon.id;});
+  if(idx!==-1){sequence.splice(idx,1);}else{sequence.push(Object.assign({},addon,{isAddon:true}));}
+  renderStep5();
+}
+
+function renderFullSeq(){
+  var addons=sequence.filter(function(s){return s.isAddon;});
+  var sec=document.getElementById('full-seq-section'),list=document.getElementById('full-seq-list');
+  if(addons.length===0){sec.style.display='none';return;}
+  sec.style.display='';list.innerHTML='';
+  sequence.forEach(function(st,i){
+    var row=document.createElement('div');row.className='state-row'+(st.isAddon?' addon-state':'');
+    var handle=document.createElement('div');handle.className='drag-handle';handle.textContent='⠿';
+    var num=document.createElement('div');num.className='state-num'+(st.isAddon?'':' core-num');num.textContent=i+1;
+    var info=document.createElement('div');info.className='state-info';
+    var n=document.createElement('div');n.className='state-name'+(st.isAddon?' addon-name':'');n.textContent=st.name;
+    var b=document.createElement('div');b.className='state-badge';b.textContent=st.isAddon?'ADD-ON':'CORE';
+    info.appendChild(n);info.appendChild(b);row.appendChild(handle);row.appendChild(num);row.appendChild(info);
+    if(st.isAddon){
+      var u=document.createElement('button');u.className='mini-btn';u.textContent='↑';u.disabled=i===0;u.onclick=(function(idx){return function(e){e.stopPropagation();moveSeq(idx,-1);};})(i);
+      var dw=document.createElement('button');dw.className='mini-btn';dw.textContent='↓';dw.disabled=i===sequence.length-1;dw.onclick=(function(idx){return function(e){e.stopPropagation();moveSeq(idx,1);};})(i);
+      row.appendChild(u);row.appendChild(dw);
+    }
+    list.appendChild(row);
+  });
+}
+
+function moveSeq(i,dir){var j=i+dir;if(j<0||j>=sequence.length)return;var t=sequence[i];sequence[i]=sequence[j];sequence[j]=t;renderFullSeq();}
+
+// ── STEP 6 ────────────────────────────────────────────────────────────────
+function renderStep6(){
+  var goal=document.getElementById('inp-goal').value.trim();
+  var client=document.getElementById('inp-client').value.trim();
+  var context=document.getElementById('inp-context').value.trim();
+  var dataType=document.getElementById('inp-datatype').value;
+  var numCodes=document.getElementById('inp-codes').value||'15';
+  var role=getActiveRole();
+  var modelLabel=selectedModel==='associate'?'The Associate':selectedModel==='apprentice'?'The Apprentice':'Custom Build';
+  var coreN=sequence.filter(function(s){return !s.isAddon;}).length;
+  var addonN=sequence.filter(function(s){return s.isAddon;}).length;
+  var chips=document.getElementById('meta-chips');chips.innerHTML='';
+  [['Goal',goal.length>55?goal.substring(0,55)+'...':goal],['Role',role||'—'],['Model',modelLabel],['Stages',coreN+' core'+(addonN>0?' + '+addonN+' add-on'+(addonN>1?'s':''):'')]].forEach(function(pair){
+    var chip=document.createElement('div');chip.className='meta-chip';
+    var lbl=document.createElement('div');lbl.className='meta-chip-label';lbl.textContent=pair[0];
+    var val=document.createElement('div');val.className='meta-chip-val';val.textContent=pair[1];
+    chip.appendChild(lbl);chip.appendChild(val);chips.appendChild(chip);
+  });
+  var xml=sequence.map(function(st,i){
+    var g=st.goal.replace('[NUMBER_OF_CODES]',numCodes).replace(/\[GOAL\]/g,goal);
+    var a=st.action.replace(/\[GOAL\]/g,goal);
+    return '\n    <STATE_'+(i+1)+'>\n      <n>'+st.name+'</n>\n      <GOAL>'+g+'</GOAL>\n      <DATA_INPUT>'+st.dataInput+'</DATA_INPUT>\n      <ACTION>'+a+'</ACTION>\n      <EXIT_CRITERIA>'+st.exit+'</EXIT_CRITERIA>\n    </STATE_'+(i+1)+'>';
+  }).join('');
+  var roleLine=role?'You are a '+role+'.':'You are a Senior UX Research Lead.';
+  var prompt='<MASTER_SYSTEM_PROMPT>\n\n  <SYSTEM_IDENTITY>\n    '+roleLine+' Your goal is to conduct a rigorous qualitative analysis'+(client?' for '+client:'')+' to '+goal+'.\n  </SYSTEM_IDENTITY>\n\n  <PROJECT_CONTEXT>'+(client?'\n    <CLIENT>'+client+'</CLIENT>':'')+'\n    <GOAL>'+goal+'</GOAL>'+(context?'\n    <BACKGROUND>'+context+'</BACKGROUND>':'')+(dataType?'\n    <DATA_TYPE>'+dataType+'</DATA_TYPE>':'')+'\n    <TARGET_CODES>'+numCodes+'</TARGET_CODES>\n  </PROJECT_CONTEXT>\n\n  <OPERATIONAL_LOGIC>\n    <VERACITY_PROTOCOL>\n      1. Never paraphrase. All quotes must be verbatim from the transcript.\n      2. TRACEABILITY: Every quote MUST be accompanied by a Participant ID and Timestamp (e.g., "P01 [04:12]").\n      3. If the raw data lacks Participant IDs, use the transcript filename or a sequential identifier (User 1, User 2).\n    </VERACITY_PROTOCOL>\n\n    <AMBIGUITY_PROTOCOL>\n      1. NO GUESSING. If a transcript excerpt is unclear or sits on a border, DO NOT assign a code.\n      2. BATCHING. Mark unclear segments as [QUERY_FOR_HUMAN] and provide them at the end of each State.\n    </AMBIGUITY_PROTOCOL>\n\n    <STATE_DEFINITIONS>'+xml+'\n    </STATE_DEFINITIONS>\n\n    <CURRENT_STATE>State 1 - '+(sequence[0]?sequence[0].name:'Begin')+' (Awaiting data upload)</CURRENT_STATE>\n\n    <OUTPUT_FORMAT>\n| ID | Participant [Timestamp] | Verbatim Quote | Applied Code | Rationale | Confidence (1-10) |\n    </OUTPUT_FORMAT>\n  </OPERATIONAL_LOGIC>\n\n</MASTER_SYSTEM_PROMPT>';
+  document.getElementById('prompt-out').value=prompt;
+}
+
+function copyPrompt(){
+  var ta=document.getElementById('prompt-out'),btn=document.getElementById('copy-btn');
+  try{navigator.clipboard.writeText(ta.value);}catch(e){ta.select();document.execCommand('copy');}
+  btn.textContent='✓ Copied!';btn.classList.add('copied');
+  setTimeout(function(){btn.textContent='Copy';btn.classList.remove('copied');},2500);
+}
+
+renderStepBar();renderModelCards();renderRoleCards();
+</script>
+</body>
+</html>
